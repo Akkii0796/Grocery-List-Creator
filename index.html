@@ -1,406 +1,433 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Plus, Trash2, ShoppingCart, List, Printer, X } from 'lucide-react';
-
-export default function GroceryListApp() {
-  const [activeTab, setActiveTab] = useState('create');
-  const [masterItems, setMasterItems] = useState([]);
-  const [shoppingList, setShoppingList] = useState([]);
-  const [newItemName, setNewItemName] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Weight options
-  const weightOptions = ['250g', '500g', '1kg', '2kg', '3kg', '5kg'];
-
-  // Load data from storage
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    try {
-      const itemsResult = await window.storage.get('master-items');
-      const listResult = await window.storage.get('shopping-list');
-      
-      if (itemsResult?.value) {
-        setMasterItems(JSON.parse(itemsResult.value));
-      }
-      if (listResult?.value) {
-        setShoppingList(JSON.parse(listResult.value));
-      }
-    } catch (error) {
-      console.log('No existing data found');
-    }
-    setIsLoading(false);
-  };
-
-  const saveMasterItems = async (items) => {
-    try {
-      await window.storage.set('master-items', JSON.stringify(items));
-    } catch (error) {
-      console.error('Error saving items:', error);
-    }
-  };
-
-  const saveShoppingList = async (list) => {
-    try {
-      await window.storage.set('shopping-list', JSON.stringify(list));
-    } catch (error) {
-      console.error('Error saving shopping list:', error);
-    }
-  };
-
-  // Add item to master list
-  const addMasterItem = () => {
-    if (newItemName.trim()) {
-      const newItem = {
-        id: Date.now(),
-        name: newItemName.trim()
-      };
-      const updated = [...masterItems, newItem];
-      setMasterItems(updated);
-      saveMasterItems(updated);
-      setNewItemName('');
-    }
-  };
-
-  // Delete from master list
-  const deleteMasterItem = (id) => {
-    const updated = masterItems.filter(item => item.id !== id);
-    setMasterItems(updated);
-    saveMasterItems(updated);
-    
-    // Also remove from shopping list if present
-    const updatedList = shoppingList.filter(item => item.id !== id);
-    setShoppingList(updatedList);
-    saveShoppingList(updatedList);
-  };
-
-  // Add to shopping list
-  const addToShoppingList = (item, weight) => {
-    const existingIndex = shoppingList.findIndex(i => i.id === item.id);
-    
-    if (existingIndex >= 0) {
-      // Update existing item
-      const updated = [...shoppingList];
-      updated[existingIndex] = { ...item, weight };
-      setShoppingList(updated);
-      saveShoppingList(updated);
-    } else {
-      // Add new item
-      const updated = [...shoppingList, { ...item, weight }];
-      setShoppingList(updated);
-      saveShoppingList(updated);
-    }
-  };
-
-  // Remove from shopping list
-  const removeFromShoppingList = (id) => {
-    const updated = shoppingList.filter(item => item.id !== id);
-    setShoppingList(updated);
-    saveShoppingList(updated);
-  };
-
-  // Clear shopping list
-  const clearShoppingList = () => {
-    setShoppingList([]);
-    saveShoppingList([]);
-  };
-
-  // Filter items
-  const filteredItems = masterItems.filter(item =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Print function
-  const handlePrint = () => {
-    window.print();
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
-        <div className="text-xl text-gray-600">Loading...</div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
-      {/* Navigation */}
-      <div className="bg-white shadow-md print:hidden">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold text-green-700 mb-4">🛒 Smart Grocery List</h1>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setActiveTab('create')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                activeTab === 'create'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              <ShoppingCart size={20} />
-              Create List
-            </button>
-            <button
-              onClick={() => setActiveTab('manage')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                activeTab === 'manage'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              <List size={20} />
-              Manage Items
-            </button>
-            {shoppingList.length > 0 && (
-              <button
-                onClick={() => setActiveTab('print')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                  activeTab === 'print'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                <Printer size={20} />
-                Print List ({shoppingList.length})
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        {/* Create Shopping List Tab */}
-        {activeTab === 'create' && (
-          <div className="bg-white rounded-xl shadow-lg p-6 print:hidden">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Create Shopping List</h2>
-            
-            {/* Search */}
-            <div className="mb-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 text-gray-400" size={20} />
-                <input
-                  type="text"
-                  placeholder="Search items..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none text-lg"
-                />
-              </div>
-            </div>
-
-            {/* Current Shopping List */}
-            {shoppingList.length > 0 && (
-              <div className="mb-6 p-4 bg-green-50 rounded-lg border-2 border-green-200">
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className="font-bold text-green-800">Current List ({shoppingList.length} items)</h3>
-                  <button
-                    onClick={clearShoppingList}
-                    className="text-sm text-red-600 hover:text-red-800 font-medium"
-                  >
-                    Clear All
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  {shoppingList.map(item => (
-                    <div key={item.id} className="flex justify-between items-center bg-white p-3 rounded-lg">
-                      <span className="font-medium">{item.name}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-                          {item.weight}
-                        </span>
-                        <button
-                          onClick={() => removeFromShoppingList(item.id)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <X size={20} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Available Items */}
-            <h3 className="font-bold text-gray-700 mb-3">Select Items & Quantity</h3>
-            
-            {filteredItems.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                {masterItems.length === 0 ? (
-                  <div>
-                    <p className="mb-2">No items yet!</p>
-                    <p className="text-sm">Go to "Manage Items" to add your grocery items.</p>
-                  </div>
-                ) : (
-                  <p>No items found matching "{searchTerm}"</p>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {filteredItems.map(item => {
-                  const inList = shoppingList.find(i => i.id === item.id);
-                  return (
-                    <div key={item.id} className="border-2 border-gray-200 rounded-lg p-4 hover:border-green-300 transition-colors">
-                      <div className="font-medium text-gray-800 mb-3">{item.name}</div>
-                      <div className="flex flex-wrap gap-2">
-                        {weightOptions.map(weight => (
-                          <button
-                            key={weight}
-                            onClick={() => addToShoppingList(item, weight)}
-                            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                              inList?.weight === weight
-                                ? 'bg-green-600 text-white shadow-md'
-                                : 'bg-gray-100 text-gray-700 hover:bg-green-100 hover:text-green-700'
-                            }`}
-                          >
-                            {weight}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Manage Items Tab */}
-        {activeTab === 'manage' && (
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Manage Master Items</h2>
-            
-            {/* Add New Item */}
-            <div className="mb-6">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Enter item name (e.g., Rice, Milk, Sugar)"
-                  value={newItemName}
-                  onChange={(e) => setNewItemName(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && addMasterItem()}
-                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none text-lg"
-                />
-                <button
-                  onClick={addMasterItem}
-                  className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center gap-2"
-                >
-                  <Plus size={20} />
-                  Add
-                </button>
-              </div>
-            </div>
-
-            {/* Master Items List */}
-            <div>
-              <h3 className="font-bold text-gray-700 mb-3">
-                All Items ({masterItems.length})
-              </h3>
-              {masterItems.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <p>No items yet. Add your first item above!</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {masterItems.map(item => (
-                    <div
-                      key={item.id}
-                      className="flex justify-between items-center bg-gray-50 p-4 rounded-lg border border-gray-200 hover:border-green-300 transition-colors"
-                    >
-                      <span className="font-medium text-gray-800">{item.name}</span>
-                      <button
-                        onClick={() => deleteMasterItem(item.id)}
-                        className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Print View Tab */}
-        {activeTab === 'print' && (
-          <div>
-            <div className="bg-white rounded-xl shadow-lg p-6 mb-4 print:hidden">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-gray-800">Ready to Print</h2>
-                <button
-                  onClick={handlePrint}
-                  className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center gap-2"
-                >
-                  <Printer size={20} />
-                  Print / Save as PDF
-                </button>
-              </div>
-              <p className="text-gray-600 mt-2">Click the button above to print or save as PDF to send to your vendor.</p>
-            </div>
-
-            {/* Printable List */}
-            <div className="bg-white rounded-xl shadow-lg p-8 print:shadow-none">
-              <div className="text-center mb-6">
-                <h1 className="text-3xl font-bold text-green-700 mb-2">Grocery List</h1>
-                <p className="text-gray-600">{new Date().toLocaleDateString('en-IN', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}</p>
-              </div>
-
-              <div className="border-t-2 border-b-2 border-gray-300 py-4 mb-6">
-                <div className="grid grid-cols-12 gap-4 font-bold text-gray-700 text-lg">
-                  <div className="col-span-1">#</div>
-                  <div className="col-span-8">Item Name</div>
-                  <div className="col-span-3 text-right">Quantity</div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {shoppingList.map((item, index) => (
-                  <div key={item.id} className="grid grid-cols-12 gap-4 py-3 border-b border-gray-200 text-lg">
-                    <div className="col-span-1 text-gray-600">{index + 1}</div>
-                    <div className="col-span-8 font-medium text-gray-800">{item.name}</div>
-                    <div className="col-span-3 text-right font-bold text-green-700">{item.weight}</div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-8 pt-4 border-t-2 border-gray-300">
-                <div className="text-right text-xl font-bold text-gray-700">
-                  Total Items: {shoppingList.length}
-                </div>
-              </div>
-
-              <div className="mt-8 text-center text-gray-500 text-sm">
-                <p>Thank you for your order!</p>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Print Styles */}
-      <style jsx>{`
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>स्मार्ट किराणा सूची</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
         @media print {
-          body {
-            background: white !important;
-          }
-          .print\\:hidden {
-            display: none !important;
-          }
-          .print\\:shadow-none {
-            box-shadow: none !important;
-          }
+            body {
+                background: white !important;
+            }
+            .print-hidden {
+                display: none !important;
+            }
         }
-      `}</style>
-    </div>
-  );
-}
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const Search = () => (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+            </svg>
+        );
+
+        const Plus = () => (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+        );
+
+        const Trash2 = () => (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+        );
+
+        const ShoppingCart = () => (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+            </svg>
+        );
+
+        const List = () => (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="8" y1="6" x2="21" y2="6"></line>
+                <line x1="8" y1="12" x2="21" y2="12"></line>
+                <line x1="8" y1="18" x2="21" y2="18"></line>
+                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+            </svg>
+        );
+
+        const Printer = () => (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <rect x="6" y="14" width="12" height="8"></rect>
+            </svg>
+        );
+
+        const X = () => (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        );
+
+        function GroceryListApp() {
+            const [activeTab, setActiveTab] = useState('create');
+            const [masterItems, setMasterItems] = useState([]);
+            const [shoppingList, setShoppingList] = useState([]);
+            const [newItemName, setNewItemName] = useState('');
+            const [searchTerm, setSearchTerm] = useState('');
+            const [isLoading, setIsLoading] = useState(true);
+
+            const weightOptions = ['250g', '500g', '1kg', '2kg', '3kg', '5kg'];
+
+            useEffect(() => {
+                loadData();
+            }, []);
+
+            const loadData = () => {
+                try {
+                    const savedItems = localStorage.getItem('master-items');
+                    const savedList = localStorage.getItem('shopping-list');
+                    
+                    if (savedItems) {
+                        setMasterItems(JSON.parse(savedItems));
+                    }
+                    if (savedList) {
+                        setShoppingList(JSON.parse(savedList));
+                    }
+                } catch (error) {
+                    console.log('No existing data found');
+                }
+                setIsLoading(false);
+            };
+
+            const saveMasterItems = (items) => {
+                localStorage.setItem('master-items', JSON.stringify(items));
+            };
+
+            const saveShoppingList = (list) => {
+                localStorage.setItem('shopping-list', JSON.stringify(list));
+            };
+
+            const addMasterItem = () => {
+                if (newItemName.trim()) {
+                    const newItem = {
+                        id: Date.now(),
+                        name: newItemName.trim()
+                    };
+                    const updated = [...masterItems, newItem];
+                    setMasterItems(updated);
+                    saveMasterItems(updated);
+                    setNewItemName('');
+                }
+            };
+
+            const deleteMasterItem = (id) => {
+                const updated = masterItems.filter(item => item.id !== id);
+                setMasterItems(updated);
+                saveMasterItems(updated);
+                
+                const updatedList = shoppingList.filter(item => item.id !== id);
+                setShoppingList(updatedList);
+                saveShoppingList(updatedList);
+            };
+
+            const addToShoppingList = (item, weight) => {
+                const existingIndex = shoppingList.findIndex(i => i.id === item.id);
+                
+                if (existingIndex >= 0) {
+                    const updated = [...shoppingList];
+                    updated[existingIndex] = { ...item, weight };
+                    setShoppingList(updated);
+                    saveShoppingList(updated);
+                } else {
+                    const updated = [...shoppingList, { ...item, weight }];
+                    setShoppingList(updated);
+                    saveShoppingList(updated);
+                }
+            };
+
+            const removeFromShoppingList = (id) => {
+                const updated = shoppingList.filter(item => item.id !== id);
+                setShoppingList(updated);
+                saveShoppingList(updated);
+            };
+
+            const clearShoppingList = () => {
+                setShoppingList([]);
+                saveShoppingList([]);
+            };
+
+            const filteredItems = masterItems.filter(item =>
+                item.name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            const handlePrint = () => {
+                window.print();
+            };
+
+            if (isLoading) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+                        <div className="text-xl text-gray-600">लोड होत आहे...</div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+                    <div className="bg-white shadow-md print-hidden">
+                        <div className="max-w-4xl mx-auto px-4 py-4">
+                            <h1 className="text-2xl font-bold text-green-700 mb-4">🛒 स्मार्ट किराणा सूची</h1>
+                            <div className="flex gap-2 flex-wrap">
+                                <button
+                                    onClick={() => setActiveTab('create')}
+                                    className={'flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ' + (activeTab === 'create' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')}
+                                >
+                                    <ShoppingCart />
+                                    सूची तयार करा
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('manage')}
+                                    className={'flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ' + (activeTab === 'manage' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')}
+                                >
+                                    <List />
+                                    वस्तू व्यवस्थापित करा
+                                </button>
+                                {shoppingList.length > 0 && (
+                                    <button
+                                        onClick={() => setActiveTab('print')}
+                                        className={'flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ' + (activeTab === 'print' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')}
+                                    >
+                                        <Printer />
+                                        सूची छापा ({shoppingList.length})
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="max-w-4xl mx-auto px-4 py-6">
+                        {activeTab === 'create' && (
+                            <div className="bg-white rounded-xl shadow-lg p-6 print-hidden">
+                                <h2 className="text-xl font-bold text-gray-800 mb-4">खरेदीची सूची तयार करा</h2>
+                                
+                                <div className="mb-4">
+                                    <div className="relative">
+                                        <div className="absolute left-3 top-3 text-gray-400">
+                                            <Search />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            placeholder="वस्तू शोधा..."
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none text-lg"
+                                        />
+                                    </div>
+                                </div>
+
+                                {shoppingList.length > 0 && (
+                                    <div className="mb-6 p-4 bg-green-50 rounded-lg border-2 border-green-200">
+                                        <div className="flex justify-between items-center mb-3">
+                                            <h3 className="font-bold text-green-800">चालू सूची ({shoppingList.length} वस्तू)</h3>
+                                            <button
+                                                onClick={clearShoppingList}
+                                                className="text-sm text-red-600 hover:text-red-800 font-medium"
+                                            >
+                                                सर्व साफ करा
+                                            </button>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {shoppingList.map(item => (
+                                                <div key={item.id} className="flex justify-between items-center bg-white p-3 rounded-lg">
+                                                    <span className="font-medium">{item.name}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                                            {item.weight}
+                                                        </span>
+                                                        <button
+                                                            onClick={() => removeFromShoppingList(item.id)}
+                                                            className="text-red-500 hover:text-red-700"
+                                                        >
+                                                            <X />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <h3 className="font-bold text-gray-700 mb-3">वस्तू आणि प्रमाण निवडा</h3>
+                                
+                                {filteredItems.length === 0 ? (
+                                    <div className="text-center py-8 text-gray-500">
+                                        {masterItems.length === 0 ? (
+                                            <div>
+                                                <p className="mb-2">अजून कोणत्याही वस्तू नाहीत!</p>
+                                                <p className="text-sm">Go to "वस्तू व्यवस्थापित करा" to add your grocery items.</p>
+                                            </div>
+                                        ) : (
+                                            <p>या शी जुळणाऱ्या कोणत्याही वस्तू आढळल्या नाहीत: "{searchTerm}"</p>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {filteredItems.map(item => {
+                                            const inList = shoppingList.find(i => i.id === item.id);
+                                            return (
+                                                <div key={item.id} className="border-2 border-gray-200 rounded-lg p-4 hover:border-green-300 transition-colors">
+                                                    <div className="font-medium text-gray-800 mb-3">{item.name}</div>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {weightOptions.map(weight => (
+                                                            <button
+                                                                key={weight}
+                                                                onClick={() => addToShoppingList(item, weight)}
+                                                                className={'px-4 py-2 rounded-lg font-medium transition-all ' + (inList && inList.weight === weight ? 'bg-green-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-green-100 hover:text-green-700')}
+                                                            >
+                                                                {weight}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === 'manage' && (
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <h2 className="text-xl font-bold text-gray-800 mb-4">मुख्य वस्तू व्यवस्थापित करा</h2>
+                                
+                                <div className="mb-6">
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            placeholder="वस्तूचे नाव लिहा (उदा., तांदूळ, दूध, साखर)"
+                                            value={newItemName}
+                                            onChange={(e) => setNewItemName(e.target.value)}
+                                            onKeyPress={(e) => e.key === 'Enter' && addMasterItem()}
+                                            className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none text-lg"
+                                        />
+                                        <button
+                                            onClick={addMasterItem}
+                                            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center gap-2"
+                                        >
+                                            <Plus />
+                                            जोडा
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h3 className="font-bold text-gray-700 mb-3">
+                                        सर्व वस्तू ({masterItems.length})
+                                    </h3>
+                                    {masterItems.length === 0 ? (
+                                        <div className="text-center py-8 text-gray-500">
+                                            <p>No items yet. जोडा your first item above!</p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {masterItems.map(item => (
+                                                <div
+                                                    key={item.id}
+                                                    className="flex justify-between items-center bg-gray-50 p-4 rounded-lg border border-gray-200 hover:border-green-300 transition-colors"
+                                                >
+                                                    <span className="font-medium text-gray-800">{item.name}</span>
+                                                    <button
+                                                        onClick={() => deleteMasterItem(item.id)}
+                                                        className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                                    >
+                                                        <Trash2 />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'print' && (
+                            <div>
+                                <div className="bg-white rounded-xl shadow-lg p-6 mb-4 print-hidden">
+                                    <div className="flex justify-between items-center flex-wrap gap-4">
+                                        <h2 className="text-xl font-bold text-gray-800">छपाईसाठी तयार</h2>
+                                        <button
+                                            onClick={handlePrint}
+                                            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center gap-2"
+                                        >
+                                            <Printer />
+                                            छापा / PDF म्हणून साठवा
+                                        </button>
+                                    </div>
+                                    <p className="text-gray-600 mt-2">विक्रेत्याला पाठवण्यासाठी वरील बटणावर क्लिक करून छापा किंवा PDF म्हणून साठवा.</p>
+                                </div>
+
+                                <div className="bg-white rounded-xl shadow-lg p-8">
+                                    <div className="text-center mb-6">
+                                        <h1 className="text-3xl font-bold text-green-700 mb-2">किराणा सूची</h1>
+                                        <p className="text-gray-600">{new Date().toLocaleDateString('mr-IN', { 
+                                            weekday: 'long', 
+                                            year: 'numeric', 
+                                            month: 'long', 
+                                            day: 'numeric' 
+                                        })}</p>
+                                    </div>
+
+                                    <div className="border-t-2 border-b-2 border-gray-300 py-4 mb-6">
+                                        <div className="grid grid-cols-12 gap-4 font-bold text-gray-700 text-lg">
+                                            <div className="col-span-1">#</div>
+                                            <div className="col-span-8">वस्तूचे नाव</div>
+                                            <div className="col-span-3 text-right">प्रमाण</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        {shoppingList.map((item, index) => (
+                                            <div key={item.id} className="grid grid-cols-12 gap-4 py-3 border-b border-gray-200 text-lg">
+                                                <div className="col-span-1 text-gray-600">{index + 1}</div>
+                                                <div className="col-span-8 font-medium text-gray-800">{item.name}</div>
+                                                <div className="col-span-3 text-right font-bold text-green-700">{item.weight}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="mt-8 pt-4 border-t-2 border-gray-300">
+                                        <div className="text-right text-xl font-bold text-gray-700">
+                                            एकूण वस्तू: {shoppingList.length}
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-8 text-center text-gray-500 text-sm">
+                                        <p>आपल्या ऑर्डरसाठी धन्यवाद!</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<GroceryListApp />);
+    </script>
+</body>
+</html>
