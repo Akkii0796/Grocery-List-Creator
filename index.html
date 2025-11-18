@@ -35,6 +35,111 @@
       button:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
     </style>
 
+
+<!-- Compact print stylesheet -->
+<style>
+  /* Page setup */
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  /* Compact mode for printing */
+  @media print {
+    html, body { font-size: 12px; line-height: 1.2; background: #fff !important; }
+    /* Remove cards/shadows/extra paddings often added by utility classes */
+    * { box-shadow: none !important; }
+    .shadow, .shadow-sm, .shadow-md, .shadow-lg, .ring-1, .ring-2, .ring { box-shadow: none !important; }
+    .rounded, .rounded-lg, .rounded-xl, .rounded-2xl { border-radius: 0 !important; }
+    .container, .max-w-2xl, .max-w-3xl, .max-w-4xl, .max-w-5xl, .mx-auto, .px-4, .py-6, .py-8 {
+      margin: 0 !important; padding: 0 !important; width: 100% !important;
+    }
+
+    /* Headings tighter */
+    h1, h2, h3, h4 { margin: 0 0 6px 0 !important; line-height: 1.15 !important; }
+
+    /* Table dense */
+    table { width: 100%; border-collapse: collapse !important; }
+    thead th { font-weight: 700 !important; border-bottom: 1px solid #cfd8dc !important; }
+    th, td {
+      padding: 3px 6px !important;
+      border-bottom: 0.5px solid #e5e7eb !important;
+      vertical-align: top !important;
+    }
+
+    /* Reduce whitespace from common utility classes that expand rows */
+    .py-6, .py-5, .py-4, .py-3, .py-2, .py-1 { padding-top: 0 !important; padding-bottom: 0 !important; }
+    .my-6, .my-5, .my-4, .my-3, .my-2, .my-1 { margin-top: 4px !important; margin-bottom: 4px !important; }
+    .space-y-8 > * + *, .space-y-6 > * + *, .space-y-5 > * + *, .space-y-4 > * + *, .space-y-3 > * + *,
+    .space-y-2 > * + *, .space-y-1 > * + * { margin-top: 6px !important; }
+
+    /* Compact footer text */
+    footer, .text-xs, .note, .disclaimer { font-size: 10px !important; }
+
+    /* Keep rows together where possible */
+    tr, td, th { page-break-inside: avoid !important; }
+  }
+</style>
+
+
+<!-- Dense print layout: narrow qty column, vertical divider, zebra rows -->
+<style>
+  @media print {
+    /* Slightly smaller for more items per page */
+    html, body { font-size: 11.5px; line-height: 1.2; }
+
+    /* Keep table narrow enough so qty sits near name */
+    table { table-layout: fixed; width: 100%; }
+    thead th, tbody td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Columns:
+       1) index ~ 3ch; 2) name auto; 3) qty ~ 8ch */
+    th:nth-child(1), td:nth-child(1) { width: 3.5ch; text-align: right; }
+    th:nth-child(2), td:nth-child(2) { width: auto; }
+    th:nth-child(3), td:nth-child(3) { width: 9ch; text-align: right; }
+
+    /* Tighten cell padding and add a vertical rule before qty */
+    td, th { padding-top: 2px !important; padding-bottom: 2px !important; }
+    td:nth-child(2), th:nth-child(2) { padding-right: 6px !important; }
+    td:nth-child(3), th:nth-child(3) {
+      padding-left: 8px !important;
+      border-left: 0.6px solid #b0bec5 !important;
+      font-weight: 700;
+    }
+
+    /* Subtle zebra striping for row grouping */
+    tbody tr:nth-child(odd) { background: #f8fafc; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    tbody tr:nth-child(even) { background: #ffffff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    /* Keep header compact */
+    h1 { margin-bottom: 6px !important; }
+    header, .title-block { margin-bottom: 6px !important; }
+  }
+</style>
+
+
+<!-- Ultra-dense print tuning: bring name and qty closer -->
+<style>
+  @media print {
+    /* Narrow the table and center it so name & qty sit closer */
+    table { width: 86% !important; margin: 0 auto !important; }
+
+    /* Slightly smaller font, tighter cells */
+    html, body { font-size: 11px; line-height: 1.18; }
+    th, td { padding: 1px 4px !important; }
+
+    /* Even narrower columns */
+    th:nth-child(1), td:nth-child(1) { width: 3ch !important; }
+    th:nth-child(3), td:nth-child(3) { width: 7ch !important; text-align: right !important; }
+
+    /* Keep the visual pairing */
+    td:nth-child(3), th:nth-child(3) { border-left: 0.5px solid #b0bec5 !important; padding-left: 6px !important; }
+
+    /* Thin row separators */
+    th, td { border-bottom: 0.4px solid #e0e0e0 !important; }
+  }
+</style>
+
 </head>
 <body>
     <div id="root"></div>
