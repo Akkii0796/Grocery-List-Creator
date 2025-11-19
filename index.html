@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>स्मार्ट किराणा सूची</title>
+    <title>किराणा यादी</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -16,136 +16,55 @@
             .print-hidden {
                 display: none !important;
             }
+            .print-page {
+                padding: 15px !important;
+                font-size: 12px !important;
+            }
+            .print-row {
+                padding: 4px 0 !important;
+                border-bottom: 1px solid #e5e7eb !important;
+            }
+            .print-header {
+                padding: 6px 0 !important;
+                margin-bottom: 8px !important;
+            }
+            .print-title {
+                font-size: 20px !important;
+                margin-bottom: 4px !important;
+            }
+            .print-date {
+                font-size: 11px !important;
+            }
         }
     </style>
-
-    <!-- Devanagari font for better Marathi rendering -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;700&display=swap" rel="stylesheet">
-
-    <!-- Tailwind CSS fallback (works without running JS). Keeps the existing CDN script as primary. -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-
-    <!-- Minimal base styles (safe even if Tailwind is present) -->
-    <style>
-      :root { --accent: #16a34a; }
-      html, body { font-family: 'Noto Sans Devanagari', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif; }
-      /* Improve button focus for accessibility even without Tailwind */
-      button:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
-    </style>
-
-
-<!-- Compact print stylesheet -->
-<style>
-  /* Page setup */
-  @page {
-    size: A4 portrait;
-    margin: 10mm;
-  }
-
-  /* Compact mode for printing */
-  @media print {
-    html, body { font-size: 12px; line-height: 1.2; background: #fff !important; }
-    /* Remove cards/shadows/extra paddings often added by utility classes */
-    * { box-shadow: none !important; }
-    .shadow, .shadow-sm, .shadow-md, .shadow-lg, .ring-1, .ring-2, .ring { box-shadow: none !important; }
-    .rounded, .rounded-lg, .rounded-xl, .rounded-2xl { border-radius: 0 !important; }
-    .container, .max-w-2xl, .max-w-3xl, .max-w-4xl, .max-w-5xl, .mx-auto, .px-4, .py-6, .py-8 {
-      margin: 0 !important; padding: 0 !important; width: 100% !important;
-    }
-
-    /* Headings tighter */
-    h1, h2, h3, h4 { margin: 0 0 6px 0 !important; line-height: 1.15 !important; }
-
-    /* Table dense */
-    table { width: 100%; border-collapse: collapse !important; }
-    thead th { font-weight: 700 !important; border-bottom: 1px solid #cfd8dc !important; }
-    th, td {
-      padding: 3px 6px !important;
-      border-bottom: 0.5px solid #e5e7eb !important;
-      vertical-align: top !important;
-    }
-
-    /* Reduce whitespace from common utility classes that expand rows */
-    .py-6, .py-5, .py-4, .py-3, .py-2, .py-1 { padding-top: 0 !important; padding-bottom: 0 !important; }
-    .my-6, .my-5, .my-4, .my-3, .my-2, .my-1 { margin-top: 4px !important; margin-bottom: 4px !important; }
-    .space-y-8 > * + *, .space-y-6 > * + *, .space-y-5 > * + *, .space-y-4 > * + *, .space-y-3 > * + *,
-    .space-y-2 > * + *, .space-y-1 > * + * { margin-top: 6px !important; }
-
-    /* Compact footer text */
-    footer, .text-xs, .note, .disclaimer { font-size: 10px !important; }
-
-    /* Keep rows together where possible */
-    tr, td, th { page-break-inside: avoid !important; }
-  }
-</style>
-
-
-<!-- Dense print layout: narrow qty column, vertical divider, zebra rows -->
-<style>
-  @media print {
-    /* Slightly smaller for more items per page */
-    html, body { font-size: 11.5px; line-height: 1.2; }
-
-    /* Keep table narrow enough so qty sits near name */
-    table { table-layout: fixed; width: 100%; }
-    thead th, tbody td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-    /* Columns:
-       1) index ~ 3ch; 2) name auto; 3) qty ~ 8ch */
-    th:nth-child(1), td:nth-child(1) { width: 3.5ch; text-align: right; }
-    th:nth-child(2), td:nth-child(2) { width: auto; }
-    th:nth-child(3), td:nth-child(3) { width: 9ch; text-align: right; }
-
-    /* Tighten cell padding and add a vertical rule before qty */
-    td, th { padding-top: 2px !important; padding-bottom: 2px !important; }
-    td:nth-child(2), th:nth-child(2) { padding-right: 6px !important; }
-    td:nth-child(3), th:nth-child(3) {
-      padding-left: 8px !important;
-      border-left: 0.6px solid #b0bec5 !important;
-      font-weight: 700;
-    }
-
-    /* Subtle zebra striping for row grouping */
-    tbody tr:nth-child(odd) { background: #f8fafc; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    tbody tr:nth-child(even) { background: #ffffff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-
-    /* Keep header compact */
-    h1 { margin-bottom: 6px !important; }
-    header, .title-block { margin-bottom: 6px !important; }
-  }
-</style>
-
-
-<!-- Ultra-dense print tuning: bring name and qty closer -->
-<style>
-  @media print {
-    /* Narrow the table and center it so name & qty sit closer */
-    table { width: 86% !important; margin: 0 auto !important; }
-
-    /* Slightly smaller font, tighter cells */
-    html, body { font-size: 11px; line-height: 1.18; }
-    th, td { padding: 1px 4px !important; }
-
-    /* Even narrower columns */
-    th:nth-child(1), td:nth-child(1) { width: 3ch !important; }
-    th:nth-child(3), td:nth-child(3) { width: 7ch !important; text-align: right !important; }
-
-    /* Keep the visual pairing */
-    td:nth-child(3), th:nth-child(3) { border-left: 0.5px solid #b0bec5 !important; padding-left: 6px !important; }
-
-    /* Thin row separators */
-    th, td { border-bottom: 0.4px solid #e0e0e0 !important; }
-  }
-</style>
-
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect } = React;
+
+        const DEFAULT_ITEMS = [
+            'तांदूळ', 'गहू', 'गहू पीठ', 'ज्वारी पीठ', 'बाजरी पीठ', 'नाचणी पीठ',
+            'तांदूळ पीठ', 'रवा (सूजी)', 'मैदा', 'पोहे', 'शेवई', 'ओट्स',
+            'तूर डाळ', 'चना डाळ', 'मूग डाळ', 'उडीद डाळ', 'मसूर डाळ',
+            'हरभरा', 'काळा हरभरा', 'मटकी', 'राजमा', 'काबुली चणे', 'वाटाणा (सुका)', 'सोयाबीन',
+            'शेंगदाणा तेल', 'सूर्यमुखी तेल', 'मोहरी तेल', 'तीळ तेल', 'खोबरेल तेल', 'तूप', 'लोणी',
+            'मीठ', 'साखर', 'गूळ', 'हळद', 'लाल तिखट', 'धणे पावडर',
+            'जिरे', 'मोहरी', 'हिंग', 'दालचिनी', 'लवंग', 'वेलदोडा', 'तेजपत्ता', 'काळी मिरी', 'बडीशेप', 'खसखस',
+            'आमसूल/इमली', 'गरम मसाला', 'कसुरी मेथी',
+            'ब्रेड', 'बिस्किटे', 'मुरमुरा', 'चिवडा', 'कॉर्नफ्लेक्स', 'शेंगदाणे', 'पीनट बटर',
+            'चहा पत्ती', 'कॉफी पावडर', 'दूध पावडर',
+            'दूध', 'दही', 'ताक', 'पनीर', 'चीज', 'अंडी',
+            'कांदा', 'बटाटा', 'टोमॅटो', 'काकडी', 'गाजर', 'बीट',
+            'फूलकोबी', 'कोबी', 'शिमला मिरची', 'भेंडी', 'दोडका', 'तोंडली', 'वांगी', 'कारले',
+            'पालक', 'मेथी', 'कोथिंबीर', 'कढीपत्ता', 'हिरवी मिरची', 'आले', 'लसूण', 'लिंबू', 'मटार',
+            'केळी', 'सफरचंद', 'मोसंबी', 'संत्रे', 'पपई', 'डाळिंब', 'द्राक्षे', 'पेरू', 'कलिंगड',
+            'टोमॅटो केचप', 'सोया सॉस', 'व्हिनेगर', 'हिरवी चटणी', 'कोरडी चटणी', 'लोणचे',
+            'डिशवॉश बार', 'डिशवॉश लिक्विड', 'भांडी स्क्रबर', 'कपडे धुण्याचा डिटर्जंट', 'फॅब्रिक कंडिशनर',
+            'फ्लोअर क्लिनर', 'हात धुण्याचा साबण', 'टिश्यू पेपर', 'किचन टॉवेल',
+            'कचरा पिशव्या', 'अॅल्युमिनियम फॉइल', 'क्लिंग फिल्म', 'मॅचबॉक्स'
+        ];
 
         const Search = () => (
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -167,6 +86,12 @@
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                 <line x1="10" y1="11" x2="10" y2="17"></line>
                 <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+        );
+
+        const Pencil = () => (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
             </svg>
         );
 
@@ -211,6 +136,8 @@
             const [newItemName, setNewItemName] = useState('');
             const [searchTerm, setSearchTerm] = useState('');
             const [isLoading, setIsLoading] = useState(true);
+            const [editingItem, setEditingItem] = useState(null);
+            const [editingName, setEditingName] = useState('');
 
             const weightOptions = ['250g', '500g', '1kg', '2kg', '3kg', '5kg'];
 
@@ -221,11 +148,19 @@
             const loadData = () => {
                 try {
                     const savedItems = localStorage.getItem('master-items');
-                    const savedList = localStorage.getItem('shopping-list');
                     
                     if (savedItems) {
                         setMasterItems(JSON.parse(savedItems));
+                    } else {
+                        const defaultItemsWithIds = DEFAULT_ITEMS.map((name, index) => ({
+                            id: Date.now() + index,
+                            name: name
+                        }));
+                        setMasterItems(defaultItemsWithIds);
+                        saveMasterItems(defaultItemsWithIds);
                     }
+                    
+                    const savedList = localStorage.getItem('shopping-list');
                     if (savedList) {
                         setShoppingList(JSON.parse(savedList));
                     }
@@ -254,6 +189,34 @@
                     saveMasterItems(updated);
                     setNewItemName('');
                 }
+            };
+
+            const startEditing = (item) => {
+                setEditingItem(item.id);
+                setEditingName(item.name);
+            };
+
+            const saveEdit = (id) => {
+                if (editingName.trim()) {
+                    const updated = masterItems.map(item => 
+                        item.id === id ? { ...item, name: editingName.trim() } : item
+                    );
+                    setMasterItems(updated);
+                    saveMasterItems(updated);
+                    
+                    const updatedList = shoppingList.map(item =>
+                        item.id === id ? { ...item, name: editingName.trim() } : item
+                    );
+                    setShoppingList(updatedList);
+                    saveShoppingList(updatedList);
+                }
+                setEditingItem(null);
+                setEditingName('');
+            };
+
+            const cancelEdit = () => {
+                setEditingItem(null);
+                setEditingName('');
             };
 
             const deleteMasterItem = (id) => {
@@ -312,14 +275,14 @@
                 <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
                     <div className="bg-white shadow-md print-hidden">
                         <div className="max-w-4xl mx-auto px-4 py-4">
-                            <h1 className="text-2xl font-bold text-green-700 mb-4">🛒 स्मार्ट किराणा सूची</h1>
+                            <h1 className="text-2xl font-bold text-green-700 mb-4">🛒 किराणा यादी</h1>
                             <div className="flex gap-2 flex-wrap">
                                 <button
                                     onClick={() => setActiveTab('create')}
                                     className={'flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ' + (activeTab === 'create' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')}
                                 >
                                     <ShoppingCart />
-                                    सूची तयार करा
+                                    यादी तयार करा
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('manage')}
@@ -334,7 +297,7 @@
                                         className={'flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ' + (activeTab === 'print' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')}
                                     >
                                         <Printer />
-                                        सूची छापा ({shoppingList.length})
+                                        यादी छापा ({shoppingList.length})
                                     </button>
                                 )}
                             </div>
@@ -344,7 +307,7 @@
                     <div className="max-w-4xl mx-auto px-4 py-6">
                         {activeTab === 'create' && (
                             <div className="bg-white rounded-xl shadow-lg p-6 print-hidden">
-                                <h2 className="text-xl font-bold text-gray-800 mb-4">खरेदीची सूची तयार करा</h2>
+                                <h2 className="text-xl font-bold text-gray-800 mb-4">किराणा यादी तयार करा</h2>
                                 
                                 <div className="mb-4">
                                     <div className="relative">
@@ -364,12 +327,12 @@
                                 {shoppingList.length > 0 && (
                                     <div className="mb-6 p-4 bg-green-50 rounded-lg border-2 border-green-200">
                                         <div className="flex justify-between items-center mb-3">
-                                            <h3 className="font-bold text-green-800">चालू सूची ({shoppingList.length} वस्तू)</h3>
+                                            <h3 className="font-bold text-green-800">सध्याची यादी ({shoppingList.length} वस्तू)</h3>
                                             <button
                                                 onClick={clearShoppingList}
                                                 className="text-sm text-red-600 hover:text-red-800 font-medium"
                                             >
-                                                सर्व साफ करा
+                                                सर्व काढा
                                             </button>
                                         </div>
                                         <div className="space-y-2">
@@ -399,34 +362,36 @@
                                     <div className="text-center py-8 text-gray-500">
                                         {masterItems.length === 0 ? (
                                             <div>
-                                                <p className="mb-2">अजून कोणत्याही वस्तू नाहीत!</p>
-                                                <p className="text-sm">Go to "वस्तू व्यवस्थापित करा" to add your grocery items.</p>
+                                                <p className="mb-2">अजून वस्तू नाहीत!</p>
+                                                <p className="text-sm">"वस्तू व्यवस्थापित करा" वर जा आणि वस्तू जोडा.</p>
                                             </div>
                                         ) : (
-                                            <p>या शी जुळणाऱ्या कोणत्याही वस्तू आढळल्या नाहीत: "{searchTerm}"</p>
+                                            <p>"{searchTerm}" शी जुळणाऱ्या वस्तू सापडल्या नाहीत</p>
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="space-y-3">
-                                        {filteredItems.map(item => {
-                                            const inList = shoppingList.find(i => i.id === item.id);
-                                            return (
-                                                <div key={item.id} className="border-2 border-gray-200 rounded-lg p-4 hover:border-green-300 transition-colors">
-                                                    <div className="font-medium text-gray-800 mb-3">{item.name}</div>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {weightOptions.map(weight => (
-                                                            <button
-                                                                key={weight}
-                                                                onClick={() => addToShoppingList(item, weight)}
-                                                                className={'px-4 py-2 rounded-lg font-medium transition-all ' + (inList && inList.weight === weight ? 'bg-green-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-green-100 hover:text-green-700')}
-                                                            >
-                                                                {weight}
-                                                            </button>
-                                                        ))}
+                                    <div className="max-h-96 overflow-y-auto border-2 border-gray-200 rounded-lg p-3">
+                                        <div className="space-y-3">
+                                            {filteredItems.map(item => {
+                                                const inList = shoppingList.find(i => i.id === item.id);
+                                                return (
+                                                    <div key={item.id} className="border-2 border-gray-200 rounded-lg p-4 hover:border-green-300 transition-colors">
+                                                        <div className="font-medium text-gray-800 mb-3">{item.name}</div>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {weightOptions.map(weight => (
+                                                                <button
+                                                                    key={weight}
+                                                                    onClick={() => addToShoppingList(item, weight)}
+                                                                    className={'px-4 py-2 rounded-lg font-medium transition-all ' + (inList && inList.weight === weight ? 'bg-green-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-green-100 hover:text-green-700')}
+                                                                >
+                                                                    {weight}
+                                                                </button>
+                                                            ))}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            );
-                                        })}
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -434,13 +399,13 @@
 
                         {activeTab === 'manage' && (
                             <div className="bg-white rounded-xl shadow-lg p-6">
-                                <h2 className="text-xl font-bold text-gray-800 mb-4">मुख्य वस्तू व्यवस्थापित करा</h2>
+                                <h2 className="text-xl font-bold text-gray-800 mb-4">वस्तू व्यवस्थापित करा</h2>
                                 
                                 <div className="mb-6">
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2 mb-4">
                                         <input
                                             type="text"
-                                            placeholder="वस्तूचे नाव लिहा (उदा., तांदूळ, दूध, साखर)"
+                                            placeholder="वस्तूचे नाव टाका (उदा. तांदूळ, दूध, साखर)"
                                             value={newItemName}
                                             onChange={(e) => setNewItemName(e.target.value)}
                                             onKeyPress={(e) => e.key === 'Enter' && addMasterItem()}
@@ -454,32 +419,89 @@
                                             जोडा
                                         </button>
                                     </div>
+                                    
+                                    <div className="relative">
+                                        <div className="absolute left-3 top-3 text-gray-400">
+                                            <Search />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            placeholder="वस्तू शोधा..."
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none text-lg"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div>
                                     <h3 className="font-bold text-gray-700 mb-3">
-                                        सर्व वस्तू ({masterItems.length})
+                                        सर्व वस्तू ({filteredItems.length} / {masterItems.length})
                                     </h3>
-                                    {masterItems.length === 0 ? (
+                                    {filteredItems.length === 0 ? (
                                         <div className="text-center py-8 text-gray-500">
-                                            <p>No items yet. जोडा your first item above!</p>
+                                            {masterItems.length === 0 ? (
+                                                <p>अजून वस्तू नाहीत. वरून पहिली वस्तू जोडा!</p>
+                                            ) : (
+                                                <p>"{searchTerm}" शी जुळणाऱ्या वस्तू सापडल्या नाहीत</p>
+                                            )}
                                         </div>
                                     ) : (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            {masterItems.map(item => (
-                                                <div
-                                                    key={item.id}
-                                                    className="flex justify-between items-center bg-gray-50 p-4 rounded-lg border border-gray-200 hover:border-green-300 transition-colors"
-                                                >
-                                                    <span className="font-medium text-gray-800">{item.name}</span>
-                                                    <button
-                                                        onClick={() => deleteMasterItem(item.id)}
-                                                        className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                        <div className="max-h-96 overflow-y-auto border-2 border-gray-200 rounded-lg p-3">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                {filteredItems.map(item => (
+                                                    <div
+                                                        key={item.id}
+                                                        className="flex justify-between items-center bg-gray-50 p-4 rounded-lg border border-gray-200 hover:border-green-300 transition-colors"
                                                     >
-                                                        <Trash2 />
-                                                    </button>
-                                                </div>
-                                            ))}
+                                                        {editingItem === item.id ? (
+                                                            <div className="flex-1 flex gap-2">
+                                                                <input
+                                                                    type="text"
+                                                                    value={editingName}
+                                                                    onChange={(e) => setEditingName(e.target.value)}
+                                                                    onKeyPress={(e) => {
+                                                                        if (e.key === 'Enter') saveEdit(item.id);
+                                                                        if (e.key === 'Escape') cancelEdit();
+                                                                    }}
+                                                                    className="flex-1 px-2 py-1 border-2 border-green-500 rounded focus:outline-none"
+                                                                    autoFocus
+                                                                />
+                                                                <button
+                                                                    onClick={() => saveEdit(item.id)}
+                                                                    className="text-green-600 hover:text-green-800 px-2"
+                                                                >
+                                                                    ✓
+                                                                </button>
+                                                                <button
+                                                                    onClick={cancelEdit}
+                                                                    className="text-red-600 hover:text-red-800 px-2"
+                                                                >
+                                                                    ✕
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <span className="font-medium text-gray-800">{item.name}</span>
+                                                                <div className="flex gap-2">
+                                                                    <button
+                                                                        onClick={() => startEditing(item)}
+                                                                        className="text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                    >
+                                                                        <Pencil />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => deleteMasterItem(item.id)}
+                                                                        className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                                                    >
+                                                                        <Trash2 />
+                                                                    </button>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -490,22 +512,22 @@
                             <div>
                                 <div className="bg-white rounded-xl shadow-lg p-6 mb-4 print-hidden">
                                     <div className="flex justify-between items-center flex-wrap gap-4">
-                                        <h2 className="text-xl font-bold text-gray-800">छपाईसाठी तयार</h2>
+                                        <h2 className="text-xl font-bold text-gray-800">छापण्यासाठी तयार</h2>
                                         <button
                                             onClick={handlePrint}
                                             className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center gap-2"
                                         >
                                             <Printer />
-                                            छापा / PDF म्हणून साठवा
+                                            छापा / PDF म्हणून सेव्ह करा
                                         </button>
                                     </div>
-                                    <p className="text-gray-600 mt-2">विक्रेत्याला पाठवण्यासाठी वरील बटणावर क्लिक करून छापा किंवा PDF म्हणून साठवा.</p>
+                                    <p className="text-gray-600 mt-2">वरील बटण दाबा आणि छापा किंवा PDF म्हणून सेव्ह करून दुकानदाराला पाठवा.</p>
                                 </div>
 
-                                <div className="bg-white rounded-xl shadow-lg p-8">
-                                    <div className="text-center mb-6">
-                                        <h1 className="text-3xl font-bold text-green-700 mb-2">किराणा सूची</h1>
-                                        <p className="text-gray-600">{new Date().toLocaleDateString('mr-IN', { 
+                                <div className="bg-white rounded-xl shadow-lg p-8 print-page">
+                                    <div className="text-center mb-6 print-header">
+                                        <h1 className="text-3xl font-bold text-green-700 mb-2 print-title">किराणा यादी</h1>
+                                        <p className="text-gray-600 print-date">{new Date().toLocaleDateString('mr-IN', { 
                                             weekday: 'long', 
                                             year: 'numeric', 
                                             month: 'long', 
@@ -513,32 +535,32 @@
                                         })}</p>
                                     </div>
 
-                                    <div className="border-t-2 border-b-2 border-gray-300 py-4 mb-6">
-                                        <div className="grid grid-cols-12 gap-4 font-bold text-gray-700 text-lg">
-                                            <div className="col-span-1">#</div>
+                                    <div className="border-t-2 border-b-2 border-gray-400 py-3 mb-3">
+                                        <div className="grid grid-cols-12 gap-3 font-bold text-gray-800 text-base">
+                                            <div className="col-span-1 text-center">क्र.</div>
                                             <div className="col-span-8">वस्तूचे नाव</div>
                                             <div className="col-span-3 text-right">प्रमाण</div>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-4">
+                                    <div>
                                         {shoppingList.map((item, index) => (
-                                            <div key={item.id} className="grid grid-cols-12 gap-4 py-3 border-b border-gray-200 text-lg">
-                                                <div className="col-span-1 text-gray-600">{index + 1}</div>
-                                                <div className="col-span-8 font-medium text-gray-800">{item.name}</div>
+                                            <div key={item.id} className="grid grid-cols-12 gap-3 py-2 border-b border-gray-200 print-row">
+                                                <div className="col-span-1 text-gray-700 text-center">{index + 1}</div>
+                                                <div className="col-span-8 font-medium text-gray-900">{item.name}</div>
                                                 <div className="col-span-3 text-right font-bold text-green-700">{item.weight}</div>
                                             </div>
                                         ))}
                                     </div>
 
-                                    <div className="mt-8 pt-4 border-t-2 border-gray-300">
-                                        <div className="text-right text-xl font-bold text-gray-700">
+                                    <div className="mt-6 pt-4 border-t-2 border-gray-400">
+                                        <div className="text-right text-lg font-bold text-gray-800">
                                             एकूण वस्तू: {shoppingList.length}
                                         </div>
                                     </div>
 
-                                    <div className="mt-8 text-center text-gray-500 text-sm">
-                                        <p>आपल्या ऑर्डरसाठी धन्यवाद!</p>
+                                    <div className="mt-6 text-center text-gray-500 text-sm">
+                                        <p>ऑर्डरबद्दल धन्यवाद!</p>
                                     </div>
                                 </div>
                             </div>
